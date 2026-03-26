@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gate System — Access Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12; --surface: #141720; --border: #2a2f3f;
+    --gold: #f0a500; --green: #1db96a; --text: #e8eaf0; --muted: #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 24px;
+  }
+  .logo {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+    font-size: 13px; letter-spacing: 4px; color: var(--muted);
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+  h1 {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+    font-size: 42px; letter-spacing: 2px; color: var(--text);
+    text-align: center; margin-bottom: 6px;
+  }
+  .sub {
+    font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 48px;
+  }
+  .cards {
+    display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;
+    width: 100%; max-width: 640px;
+  }
+  .card {
+    flex: 1; min-width: 240px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+    text-decoration: none; transition: transform 0.15s, box-shadow 0.15s;
+    display: flex; flex-direction: column;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+  .card-top {
+    padding: 28px 24px 20px;
+    border-top: 4px solid var(--gold);
+    flex: 1;
+  }
+  .card.green .card-top { border-top-color: var(--green); }
+  .card-badge {
+    display: inline-block;
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+    font-size: 13px; letter-spacing: 1px; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 4px;
+    background: var(--gold); color: #000; margin-bottom: 16px;
+  }
+  .card.green .card-badge { background: var(--green); }
+  .card-title {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-size: 22px; letter-spacing: 1px; color: var(--text);
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .card-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .card-footer {
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 13px; letter-spacing: 1px;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card .card-footer { color: var(--gold); }
+  .card.green .card-footer { color: var(--green); }
+  .footer-text { margin-top: 48px; font-size: 11px; color: var(--muted); text-align: center; }
+  .footer-text span { font-family: 'Share Tech Mono', monospace; color: var(--gold); }
+</style>
+</head>
+<body>
+  <div class="logo">Gate Access Control System</div>
+  <h1>PILIH POST</h1>
+  <p class="sub">Sistem pencatatan kendaraan masuk &amp; keluar</p>
+
+  <div class="cards">
+    <a class="card" href="post7-entry.html">
+      <div class="card-top">
+        <div class="card-badge">Post 7</div>
+        <div class="card-title">Vehicle Entry</div>
+        <div class="card-desc">Pencatatan kendaraan masuk. Input plat, pengemudi, perusahaan, jenis, tujuan, dan dokumen.</div>
+      </div>
+      <div class="card-footer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Buka Post 7
+      </div>
+    </a>
+
+    <a class="card green" href="post1-exit.html">
+      <div class="card-top">
+        <div class="card-badge">Post 1</div>
+        <div class="card-title">Vehicle Exit</div>
+        <div class="card-desc">Pencatatan kendaraan keluar. Cari plat, konfirmasi data, log waktu keluar dan durasi.</div>
+      </div>
+      <div class="card-footer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Buka Post 1
+      </div>
+    </a>
+  </div>
+
+  <p class="footer-text">Built by <span>rrfmargaret</span> &nbsp;·&nbsp; Security Division</p>
+</body>
+</html>

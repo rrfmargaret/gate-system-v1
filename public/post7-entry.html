@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POST 7 — VEHICLE ENTRY</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@400;500;600;700;900&family=Barlow+Condensed:wght@600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --border: #2a2f3f;
+    --accent: #f0a500;
+    --accent2: #e05c1a;
+    --green: #1db96a;
+    --red: #e53e3e;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --input-bg: #0d0f12;
+    --radius: 6px;
+  }
+
+  body.light {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface2: #e8eaf0;
+    --border: #d0d4e0;
+    --accent: #d4920a;
+    --accent2: #e05c1a;
+    --green: #1a9e5a;
+    --red: #d03030;
+    --text: #1a1c24;
+    --muted: #6b7280;
+    --input-bg: #f8f9fc;
+  }
+
+  /* Theme toggle */
+  .theme-toggle {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
+  .theme-toggle svg { width: 18px; height: 18px; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .post-badge {
+    background: var(--accent);
+    color: #000;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    border-radius: 4px;
+  }
+
+  .header-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 2px;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+
+  .header-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .clock {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 20px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-align: right;
+  }
+
+  .clock-date {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* Main layout */
+  .main {
+    flex: 1;
+    padding: 20px 24px;
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Section label */
+  .section-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding-left: 2px;
+  }
+
+  /* License plate area */
+  .plate-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .plate-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .plate-input-wrap {
+    flex: 1;
+  }
+
+  .plate-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 32px;
+    letter-spacing: 6px;
+    text-align: center;
+    text-transform: uppercase;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .plate-input::placeholder { color: #3a3000; letter-spacing: 4px; font-size: 24px; }
+  .plate-input:focus { border-color: #ffd84d; box-shadow: 0 0 0 3px rgba(240,165,0,0.15); }
+
+  .ocr-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    padding: 0 18px;
+    height: 68px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: background 0.15s, border-color 0.15s;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .ocr-btn:hover { background: #252a38; border-color: #444; }
+
+  .ocr-icon {
+    width: 22px; height: 22px;
+    display: block;
+  }
+
+  /* Grid fields */
+  .fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .field-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .field-card.full { grid-column: 1 / -1; }
+
+  label {
+    display: block;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  input[type="text"], select, input[type="date"] {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input[type="text"]:focus, select:focus, input[type="date"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(240,165,0,0.12);
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+    cursor: pointer;
+  }
+
+  select option { background: #141720; }
+
+  /* Vehicle type chips */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip-input { display: none; }
+
+  .chip-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    background: var(--input-bg);
+    color: var(--muted);
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .chip-input:checked + .chip-label {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: #fff;
+  }
+
+  .chip-label:hover { border-color: #555; color: var(--text); }
+
+  /* Destination chips */
+  .dest-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .dest-input { display: none; }
+
+  .dest-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    background: var(--input-bg);
+    color: var(--muted);
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .dest-input:checked + .dest-label {
+    background: #0e4d2e;
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .dest-label:hover { border-color: #555; color: var(--text); }
+
+  /* Shipment status chips */
+  .shipment-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .shipment-input { display: none; }
+  .shipment-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    background: var(--input-bg);
+    color: var(--muted);
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .shipment-input:checked + .shipment-label {
+    background: #1a2a4a;
+    border-color: #4a9eff;
+    color: #4a9eff;
+  }
+  .shipment-label:hover { border-color: #555; color: var(--text); }
+
+  /* Annotation chips — multi-select checkboxes */
+  .annot-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .annot-input { display: none; }
+  .annot-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    background: var(--input-bg);
+    color: var(--muted);
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .annot-input:checked + .annot-label {
+    background: #2e0a0a;
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .annot-label:hover { border-color: var(--red); color: var(--red); }
+
+  /* Annotation panel — hidden until a label is checked */
+  .annot-approval {
+    margin-top: 10px;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .annot-approval.show { display: flex; }
+
+  /* Textarea */
+  textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+    min-height: 72px;
+    line-height: 1.5;
+  }
+  textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(240,165,0,0.12);
+  }
+  textarea::placeholder { color: var(--muted); font-size: 13px; }
+
+  /* Annotation warning banner */
+  .annot-warning {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: #2e0a0a;
+    border: 1px solid var(--red);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--red);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .annot-warning.show { display: flex; }
+  body.light .annot-warning { background: #fde8e8; }
+  body.light .shipment-input:checked + .shipment-label { background: #dbeafe; border-color: #2563eb; color: #1d4ed8; }
+  body.light .annot-input:checked + .annot-label { background: #fde8e8; }
+
+  /* Autofill dropdown */
+  .plate-section { position: relative; }
+
+  .autofill-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    z-index: 50;
+    max-height: 280px;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  .autofill-dropdown.open { display: block; }
+
+  .autofill-header {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 8px 14px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .autofill-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.12s;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .autofill-item:last-child { border-bottom: none; }
+  .autofill-item:hover, .autofill-item.highlighted { background: var(--surface2); }
+
+  .autofill-plate {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 15px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    min-width: 110px;
+    flex-shrink: 0;
+  }
+
+  .autofill-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .autofill-driver {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .autofill-sub {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .autofill-count {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  /* Autofill banner — shown after fill */
+  .autofill-banner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: #1a2a0a;
+    border: 1px solid var(--green);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    margin-top: 10px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--green);
+  }
+  .autofill-banner.show { display: flex; }
+  body.light .autofill-banner { background: #e8f5e9; }
+
+  .autofill-banner-clear {
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .autofill-banner-clear:hover { background: var(--green); color: #000; }
+
+  /* Bottom action bar */
+  .action-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    bottom: 0;
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .btn-reset {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-reset:hover { border-color: var(--red); color: var(--red); }
+
+  .btn-submit {
+    background: var(--accent);
+    border: none;
+    color: #000;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 14px 40px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-submit:hover { background: #ffd84d; }
+  .btn-submit:active { transform: scale(0.98); }
+
+  /* Success toast */
+  .toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    background: #0a2e1a;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 1px;
+    padding: 14px 22px;
+    border-radius: var(--radius);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    z-index: 999;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .toast.show { display: flex; }
+
+  /* OCR modal overlay */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 90%;
+    max-width: 480px;
+    position: relative;
+  }
+
+  .modal-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: var(--text);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  #camera-view {
+    width: 100%;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: #000;
+    min-height: 200px;
+    display: block;
+  }
+
+  .modal-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .btn-capture {
+    flex: 1;
+    background: var(--accent);
+    border: none;
+    color: #000;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  .btn-close-modal {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  /* Log table */
+  .log-section {
+    margin-top: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .log-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .log-count {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead th {
+    background: var(--surface2);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #1a1f2b;
+    transition: background 0.1s;
+  }
+
+  tbody tr:hover { background: #161b26; }
+
+  tbody td {
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--text);
+    vertical-align: middle;
+  }
+
+  .plate-cell {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--accent);
+    letter-spacing: 2px;
+    font-size: 14px;
+  }
+
+  .status-in {
+    display: inline-block;
+    background: #0a2e1a;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+
+  /* Credits footer */
+  .credits {
+    text-align: center;
+    padding: 12px 24px;
+    background: var(--bg);
+  }
+
+  .credits-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px 4px 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .credits-badge:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .credits-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 600px) {
+    .fields-grid { grid-template-columns: 1fr; }
+    .plate-input { font-size: 24px; letter-spacing: 4px; }
+    .btn-submit { padding: 12px 20px; font-size: 16px; }
+    .main { padding: 14px 14px; }
+    table { font-size: 12px; }
+    thead th, tbody td { padding: 7px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <div class="post-badge">POST 7</div>
+    <div>
+      <div class="header-title">Vehicle Entry</div>
+      <div class="header-subtitle">Gate Access Control System</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div>
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="clock-date" id="clock-date">---</div>
+    </div>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
+      <svg id="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block">
+        <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- License Plate -->
+  <div class="section-label">License Plate</div>
+  <div class="plate-section">
+    <div class="plate-row">
+      <div class="plate-input-wrap">
+        <input type="text" class="plate-input" id="plate" placeholder="B 1234 XX" maxlength="12"
+          autocomplete="off" spellcheck="false"
+          oninput="onPlateInput(this)"
+          onkeydown="onPlateKeydown(event)"
+          onfocus="onPlateFocus()"
+          onblur="onPlateBlur()">
+      </div>
+      <button class="ocr-btn" onclick="openOCR()" title="Scan plate with camera">
+        <svg class="ocr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="2" y="7" width="20" height="10" rx="2"/>
+          <circle cx="12" cy="12" r="2.5"/>
+          <path d="M6 2H4a2 2 0 0 0-2 2v2M18 2h2a2 2 0 0 1 2 2v2M6 22H4a2 2 0 0 1-2-2v-2M18 22h2a2 2 0 0 0 2-2v-2"/>
+        </svg>
+        SCAN
+      </button>
+    </div>
+
+    <!-- Autofill dropdown -->
+    <div class="autofill-dropdown" id="autofill-dropdown">
+      <div class="autofill-header">Riwayat Kendaraan — Klik untuk autofill</div>
+      <div id="autofill-list"></div>
+    </div>
+
+    <!-- Autofill banner -->
+    <div class="autofill-banner" id="autofill-banner">
+      <span id="autofill-banner-msg">✓ Data diisi dari riwayat kendaraan</span>
+      <button class="autofill-banner-clear" onclick="clearAutofill()">Bersihkan</button>
+    </div>
+  </div>
+
+  <!-- Grid fields -->
+  <div class="fields-grid">
+
+    <!-- Driver name -->
+    <div class="field-card">
+      <label>Driver Name</label>
+      <input type="text" id="driver" placeholder="Full name..." autocomplete="off">
+    </div>
+
+    <!-- Company -->
+    <div class="field-card">
+      <label>Company / Vendor</label>
+      <input type="text" id="company" placeholder="Company name..." autocomplete="off">
+    </div>
+
+    <!-- SIM Type -->
+    <div class="field-card">
+      <label>Driving License Type (SIM)</label>
+      <div class="chips">
+        <input class="chip-input" type="radio" name="simtype" id="sim-a" value="SIM A">
+        <label class="chip-label" for="sim-a">SIM A</label>
+
+        <input class="chip-input" type="radio" name="simtype" id="sim-b1" value="SIM B1">
+        <label class="chip-label" for="sim-b1">SIM B1</label>
+
+        <input class="chip-input" type="radio" name="simtype" id="sim-b2" value="SIM B2">
+        <label class="chip-label" for="sim-b2">SIM B2</label>
+
+        <input class="chip-input" type="radio" name="simtype" id="sim-c" value="KTP">
+        <label class="chip-label" for="sim-c">KTP</label>
+      </div>
+    </div>
+
+    <!-- KTP & Driver Card -->
+    <div class="field-card">
+      <label>ID Number</label>
+      <input type="text" id="ktp" placeholder="NIK/SIM Number..." maxlength="16" autocomplete="off" inputmode="numeric">
+    </div>
+
+    <div class="field-card">
+      <label>Driver Card No.</label>
+      <input type="text" id="driver-card" placeholder="Card number..." autocomplete="off">
+    </div>
+
+    <!-- Vehicle type -->
+    <div class="field-card full">
+      <label>Vehicle Type</label>
+      <div class="chips">
+        <input class="chip-input" type="radio" name="vtype" id="v-car" value="Car">
+        <label class="chip-label" for="v-car">Car</label>
+
+        <input class="chip-input" type="radio" name="vtype" id="v-truck" value="Truck">
+        <label class="chip-label" for="v-truck">Truck</label>
+
+        <input class="chip-input" type="radio" name="vtype" id="v-cdd" value="CDD">
+        <label class="chip-label" for="v-cdd">CDD</label>
+
+        <input class="chip-input" type="radio" name="vtype" id="v-cde" value="CDE">
+        <label class="chip-label" for="v-cde">CDE</label>
+
+        <input class="chip-input" type="radio" name="vtype" id="v-wingbox" value="Wingbox">
+        <label class="chip-label" for="v-wingbox">Wingbox</label>
+
+        <input class="chip-input" type="radio" name="vtype" id="v-fuso" value="Fuso Box">
+        <label class="chip-label" for="v-fuso">Fuso Box</label>
+
+        <input class="chip-input" type="radio" name="vtype" id="v-isotank" value="Isotank">
+        <label class="chip-label" for="v-isotank">Isotank</label>
+      </div>
+    </div>
+
+    <!-- Destination -->
+    <div class="field-card full">
+      <label>Destination in Plant</label>
+      <div class="dest-chips">
+        <input class="dest-input" type="radio" name="dest" id="d-wha" value="WH A">
+        <label class="dest-label" for="d-wha">WH A</label>
+
+        <input class="dest-input" type="radio" name="dest" id="d-whb" value="WH B">
+        <label class="dest-label" for="d-whb">WH B</label>
+
+        <input class="dest-input" type="radio" name="dest" id="d-whc" value="WH C">
+        <label class="dest-label" for="d-whc">WH C</label>
+
+        <input class="dest-input" type="radio" name="dest" id="d-hair" value="Hair Care">
+        <label class="dest-label" for="d-hair">Hair Care</label>
+
+        <input class="dest-input" type="radio" name="dest" id="d-fabric" value="Fabric Care">
+        <label class="dest-label" for="d-fabric">Fabric Care</label>
+
+        <input class="dest-input" type="radio" name="dest" id="d-ws" value="Workshop">
+        <label class="dest-label" for="d-ws">Workshop</label>
+
+        <input class="dest-input" type="radio" name="dest" id="d-plant" value="Plant">
+        <label class="dest-label" for="d-plant">Plant</label>
+      </div>
+    </div>
+
+    <!-- Shipment Status -->
+    <div class="field-card full">
+      <label>Shipment Status</label>
+      <div class="shipment-chips">
+        <input class="shipment-input" type="checkbox" name="shipment" id="sh-loading" value="Loading">
+        <label class="shipment-label" for="sh-loading">&#9650; Loading</label>
+
+        <input class="shipment-input" type="checkbox" name="shipment" id="sh-unloading" value="Unloading">
+        <label class="shipment-label" for="sh-unloading">&#9660; Unloading</label>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div class="field-card full">
+      <label>Products / Cargo</label>
+      <textarea id="products" placeholder="Contoh: Palm Oil 20 ton, Spare Parts, Raw Material..."></textarea>
+    </div>
+
+    <!-- Details -->
+    <div class="field-card full">
+      <label>Details / Keterangan Lain</label>
+      <textarea id="details" placeholder="Informasi tambahan mengenai kendaraan atau muatan..."></textarea>
+    </div>
+
+    <!-- Annotation -->
+    <div class="field-card full">
+      <label>Annotation — Dokumen Bermasalah <span style="color:var(--muted);font-size:10px;letter-spacing:1px;font-weight:400">(OPSIONAL)</span></label>
+      <div class="annot-chips">
+        <input class="annot-input" type="checkbox" id="an-sim-exp" value="SIM EXPIRED">
+        <label class="annot-label" for="an-sim-exp">SIM EXPIRED</label>
+
+        <input class="annot-input" type="checkbox" id="an-stnk-exp" value="STNK EXPIRED">
+        <label class="annot-label" for="an-stnk-exp">STNK EXPIRED</label>
+
+        <input class="annot-input" type="checkbox" id="an-kir-exp" value="KIR EXPIRED">
+        <label class="annot-label" for="an-kir-exp">KIR EXPIRED</label>
+
+        <input class="annot-input" type="checkbox" id="an-sim-til" value="SIM TILANG">
+        <label class="annot-label" for="an-sim-til">SIM TILANG</label>
+
+        <input class="annot-input" type="checkbox" id="an-stnk-til" value="STNK TILANG">
+        <label class="annot-label" for="an-stnk-til">STNK TILANG</label>
+
+        <input class="annot-input" type="checkbox" id="an-kir-til" value="KIR TILANG">
+        <label class="annot-label" for="an-kir-til">KIR TILANG</label>
+      </div>
+
+      <!-- Warning banner — shows when any annotation is checked -->
+      <div class="annot-warning" id="annot-warning">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        DOKUMEN BERMASALAH — WAJIB ISI APPROVAL DI BAWAH
+      </div>
+
+      <!-- Approval fields — shown when any annotation is checked -->
+      <div class="annot-approval" id="annot-approval">
+        <input type="text" id="annot-approver" placeholder="Nama pemberi approval (wajib jika ada annotation)..." autocomplete="off">
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Today's log -->
+  <div class="log-section">
+    <div class="log-header">
+      <span class="log-title">Today's Entry Log</span>
+      <span class="log-count" id="log-count">0 entries</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Time In</th>
+            <th>Plate</th>
+            <th>Driver</th>
+            <th>Company</th>
+            <th>SIM</th>
+            <th>KTP</th>
+            <th>Driver Card</th>
+            <th>Type</th>
+            <th>Destination</th>
+            <th>Shipment</th>
+            <th>Products</th>
+            <th>Annotation</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="log-body">
+          <tr>
+            <td colspan="13" style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No entries yet today</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Action Bar -->
+<div class="action-bar">
+  <div class="status-indicator">
+    <div class="status-dot"></div>
+    <span id="sync-status">Ready</span>
+  </div>
+  <div style="display:flex;gap:10px">
+    <button class="btn-reset" onclick="resetForm()">Clear Form</button>
+    <button class="btn-submit" onclick="submitEntry()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 2v20M2 12l10-10 10 10"/>
+      </svg>
+      LOG ENTRY
+    </button>
+  </div>
+</div>
+
+<!-- Credits -->
+<footer class="credits">
+  <span class="credits-badge">
+    <span class="credits-dot"></span>
+    Built by rrfmargaret
+  </span>
+</footer>
+
+<!-- OCR Modal -->
+<div class="modal-overlay" id="ocr-modal">
+  <div class="modal">
+    <div class="modal-title">Scan License Plate</div>
+    <video id="camera-view" autoplay playsinline></video>
+    <canvas id="snapshot" style="display:none"></canvas>
+    <p class="modal-note">Point camera at license plate, then tap CAPTURE</p>
+    <div class="modal-actions">
+      <button class="btn-capture" onclick="captureOCR()">Capture</button>
+      <button class="btn-close-modal" onclick="closeOCR()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+  <span id="toast-msg">Entry logged successfully!</span>
+</div>
+
+<script>
+// ============================================================
+// AUTOFILL SYSTEM
+// ============================================================
+
+// Build a registry of known vehicles from ALL past logs (across days)
+function getVehicleRegistry() {
+  const registry = {};
+  // Scan all localStorage keys for gate_log entries
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key.startsWith('gate_log_')) continue;
+    try {
+      const logs = JSON.parse(localStorage.getItem(key) || '[]');
+      logs.forEach(entry => {
+        if (!entry.plate) return;
+        const plate = entry.plate.toUpperCase().trim();
+        if (!registry[plate]) {
+          registry[plate] = { plate, entries: [] };
+        }
+        registry[plate].entries.push(entry);
+      });
+    } catch {}
+  }
+  // For each plate, pick the most recent entry as the template
+  Object.values(registry).forEach(v => {
+    v.entries.sort((a, b) => (b.id || 0) - (a.id || 0));
+    v.latest = v.entries[0];
+    v.count  = v.entries.length;
+  });
+  return registry;
+}
+
+let afHighlight = -1;
+let afItems = [];
+
+function onPlateInput(el) {
+  el.value = el.value.toUpperCase();
+  showAutofillDropdown(el.value.trim());
+}
+
+function onPlateFocus() {
+  const val = document.getElementById('plate').value.trim();
+  showAutofillDropdown(val);
+}
+
+function onPlateBlur() {
+  // Delay so click on dropdown item fires first
+  setTimeout(() => closeAutofillDropdown(), 200);
+}
+
+function onPlateKeydown(e) {
+  const dd = document.getElementById('autofill-dropdown');
+  if (!dd.classList.contains('open')) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    afHighlight = Math.min(afHighlight + 1, afItems.length - 1);
+    renderAutofillHighlight();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    afHighlight = Math.max(afHighlight - 1, 0);
+    renderAutofillHighlight();
+  } else if (e.key === 'Enter' || e.key === 'Tab') {
+    if (afHighlight >= 0 && afItems[afHighlight]) {
+      e.preventDefault();
+      applyAutofill(afItems[afHighlight].plate);
+    }
+  } else if (e.key === 'Escape') {
+    closeAutofillDropdown();
+  }
+}
+
+function renderAutofillHighlight() {
+  document.querySelectorAll('.autofill-item').forEach((el, i) => {
+    el.classList.toggle('highlighted', i === afHighlight);
+  });
+}
+
+function showAutofillDropdown(query) {
+  const registry = getVehicleRegistry();
+  const allPlates = Object.values(registry).sort((a, b) => (b.latest.id || 0) - (a.latest.id || 0));
+
+  // Filter by query
+  const filtered = query.length === 0
+    ? allPlates.slice(0, 8)  // show 8 most recent if no query
+    : allPlates.filter(v => v.plate.includes(query)).slice(0, 8);
+
+  if (filtered.length === 0) {
+    closeAutofillDropdown();
+    return;
+  }
+
+  afItems = filtered;
+  afHighlight = -1;
+
+  const list = document.getElementById('autofill-list');
+  list.innerHTML = filtered.map((v, i) => {
+    const e = v.latest;
+    const dest  = e.dest  || '—';
+    const vtype = e.vtype || '—';
+    const company = e.company || '—';
+    return `
+      <div class="autofill-item" onmousedown="applyAutofill('${v.plate}')" data-idx="${i}">
+        <span class="autofill-plate">${v.plate}</span>
+        <div class="autofill-info">
+          <div class="autofill-driver">${e.driver || '—'} &nbsp;<span style="color:var(--muted);font-weight:400">${company}</span></div>
+          <div class="autofill-sub">${vtype} · ${dest} · SIM: ${e.simtype || '—'}</div>
+        </div>
+        <span class="autofill-count">${v.count}×</span>
+      </div>`;
+  }).join('');
+
+  document.getElementById('autofill-dropdown').classList.add('open');
+}
+
+function closeAutofillDropdown() {
+  document.getElementById('autofill-dropdown').classList.remove('open');
+  afHighlight = -1;
+}
+
+function applyAutofill(plate) {
+  const registry = getVehicleRegistry();
+  const v = registry[plate.toUpperCase()];
+  if (!v || !v.latest) return;
+  const e = v.latest;
+
+  // Fill plate
+  document.getElementById('plate').value = e.plate;
+
+  // Fill text fields
+  document.getElementById('driver').value     = e.driver     || '';
+  document.getElementById('company').value    = e.company    || '';
+  document.getElementById('ktp').value        = e.ktp        || '';
+  document.getElementById('driver-card').value = e.driverCard || '';
+  document.getElementById('products').value   = e.products   || '';
+  document.getElementById('details').value    = e.details    || '';
+
+  // Fill SIM type
+  document.querySelectorAll('input[name="simtype"]').forEach(r => {
+    r.checked = (r.value === e.simtype);
+  });
+
+  // Fill vehicle type
+  document.querySelectorAll('input[name="vtype"]').forEach(r => {
+    r.checked = (r.value === e.vtype);
+  });
+
+  // Fill destination
+  document.querySelectorAll('input[name="dest"]').forEach(r => {
+    r.checked = (r.value === e.dest);
+  });
+
+  // Fill shipment
+  document.querySelectorAll('input[name="shipment"]').forEach(r => {
+    r.checked = e.shipment && e.shipment.includes(r.value);
+  });
+
+  // Do NOT autofill annotations — those are per-trip exceptions
+  document.querySelectorAll('.annot-input').forEach(r => r.checked = false);
+  toggleAnnotPanel();
+
+  // Show banner
+  const banner = document.getElementById('autofill-banner');
+  document.getElementById('autofill-banner-msg').textContent =
+    `✓ Diisi dari riwayat: ${e.plate} — ${e.driver || ''} (${v.count}× kunjungan)`;
+  banner.classList.add('show');
+
+  closeAutofillDropdown();
+
+  // Focus driver field so guard can verify/edit
+  setTimeout(() => document.getElementById('driver').focus(), 50);
+}
+
+function clearAutofill() {
+  document.getElementById('autofill-banner').classList.remove('show');
+  resetForm();
+}
+
+// ---- THEME TOGGLE ----
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('gate_theme', isLight ? 'light' : 'dark');
+  document.getElementById('theme-icon-dark').style.display = isLight ? 'none' : 'block';
+  document.getElementById('theme-icon-light').style.display = isLight ? 'block' : 'none';
+}
+
+// Apply saved theme on load
+(function() {
+  const saved = localStorage.getItem('gate_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('theme-icon-dark').style.display = 'none';
+    document.getElementById('theme-icon-light').style.display = 'block';
+  }
+})();
+
+// ---- CLOCK ----
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${h}:${m}:${s}`;
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('clock-date').textContent =
+    `${days[now.getDay()]} · ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ---- PLATE INPUT FORMATTING ----
+document.getElementById('plate').addEventListener('input', function() {
+  this.value = this.value.toUpperCase();
+});
+
+// ---- LOCAL LOG STORAGE ----
+function getTodayKey() {
+  const d = new Date();
+  return `gate_log_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
+}
+
+function getLogs() {
+  try { return JSON.parse(localStorage.getItem(getTodayKey()) || '[]'); } catch { return []; }
+}
+
+function saveLogs(logs) {
+  localStorage.setItem(getTodayKey(), JSON.stringify(logs));
+}
+
+// ---- RENDER LOG TABLE ----
+function renderLog() {
+  const logs = getLogs();
+  const tbody = document.getElementById('log-body');
+  const count = document.getElementById('log-count');
+  count.textContent = `${logs.length} entr${logs.length === 1 ? 'y' : 'ies'}`;
+
+  if (logs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No entries yet today</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = logs.slice().reverse().map(e => {
+    const annotBadges = e.annotations && e.annotations.length
+      ? e.annotations.map(a => `<span style="display:inline-block;background:#2e0a0a;border:1px solid var(--red);color:var(--red);font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;margin:1px">${a}</span>`).join(' ')
+      : '<span style="color:var(--muted)">—</span>';
+    const shipmentVal = e.shipment && e.shipment.length ? e.shipment.join(' + ') : '—';
+    return `
+    <tr>
+      <td style="font-family:'Share Tech Mono',monospace;color:#9ca3af;font-size:13px">${e.timeIn}</td>
+      <td class="plate-cell">${e.plate}</td>
+      <td>${e.driver}</td>
+      <td style="color:var(--muted)">${e.company}</td>
+      <td style="color:#9ca3af">${e.simtype || '-'}</td>
+      <td style="font-family:'Share Tech Mono',monospace;color:#9ca3af;font-size:12px">${e.ktp || '-'}</td>
+      <td style="color:#9ca3af">${e.driverCard || '-'}</td>
+      <td style="color:#9ca3af">${e.vtype}</td>
+      <td style="color:#9ca3af">${e.dest}</td>
+      <td style="color:#4a9eff;font-size:12px">${shipmentVal}</td>
+      <td style="color:var(--muted);font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.products || ''}">${e.products || '—'}</td>
+      <td>${annotBadges}${e.annotApprover ? `<div style="color:var(--muted);font-size:10px;margin-top:2px">Approval: ${e.annotApprover}</div>` : ''}</td>
+      <td><span class="status-in">IN</span></td>
+    </tr>
+  `}).join('');
+}
+
+renderLog();
+
+// ---- SUBMIT ----
+function getTimestamp() {
+  const now = new Date();
+  return String(now.getHours()).padStart(2,'0') + ':' +
+         String(now.getMinutes()).padStart(2,'0') + ':' +
+         String(now.getSeconds()).padStart(2,'0');
+}
+
+function getFullTimestamp() {
+  return new Date().toISOString();
+}
+
+function submitEntry() {
+  const plate = document.getElementById('plate').value.trim();
+  const driver = document.getElementById('driver').value.trim();
+  const company = document.getElementById('company').value.trim();
+  const ktp = document.getElementById('ktp').value.trim();
+  const driverCard = document.getElementById('driver-card').value.trim();
+  const vtypeEl = document.querySelector('input[name="vtype"]:checked');
+  const destEl = document.querySelector('input[name="dest"]:checked');
+  const simEl = document.querySelector('input[name="simtype"]:checked');
+  const products = document.getElementById('products').value.trim();
+  const details = document.getElementById('details').value.trim();
+  const annotApprover = document.getElementById('annot-approver').value.trim();
+
+  // Collect multi-select shipment
+  const shipment = Array.from(document.querySelectorAll('input[name="shipment"]:checked')).map(el => el.value);
+
+  // Collect multi-select annotations
+  const annotations = Array.from(document.querySelectorAll('.annot-input:checked')).map(el => el.value);
+
+  if (!plate) { highlight('plate', 'Please enter license plate'); return; }
+  if (!driver) { highlight('driver', 'Please enter driver name'); return; }
+  if (!company) { highlight('company', 'Please enter company'); return; }
+  if (!simEl) { showToastError('Please select driving license type (SIM)'); return; }
+  if (!ktp) { highlight('ktp', 'Please enter KTP / NIK number'); return; }
+  if (!driverCard) { highlight('driver-card', 'Please enter driver card number'); return; }
+  if (!vtypeEl) { showToastError('Please select vehicle type'); return; }
+  if (!destEl) { showToastError('Please select destination'); return; }
+  if (annotations.length > 0 && !annotApprover) {
+    highlight('annot-approver', 'Wajib isi nama approver jika ada annotation dokumen bermasalah');
+    return;
+  }
+
+  const entry = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('id-ID'),
+    timeIn: getTimestamp(),
+    fullTimeIn: getFullTimestamp(),
+    plate: plate,
+    driver: driver,
+    company: company,
+    simtype: simEl.value,
+    ktp: ktp,
+    driverCard: driverCard,
+    vtype: vtypeEl.value,
+    dest: destEl.value,
+    shipment: shipment,
+    products: products,
+    details: details,
+    annotations: annotations,
+    annotApprover: annotApprover,
+    timeOut: '',
+    duration: '',
+    post: 'Post 7'
+  };
+
+  // Save locally
+  const logs = getLogs();
+  logs.push(entry);
+  saveLogs(logs);
+
+  // Sync to Google Sheets
+  sendToGoogleSheets(entry);
+
+  renderLog();
+  resetForm();
+  showToast(`Entry logged: ${plate}`);
+}
+
+function highlight(id, msg) {
+  const el = document.getElementById(id);
+  el.style.borderColor = 'var(--red)';
+  el.focus();
+  setTimeout(() => { el.style.borderColor = ''; }, 2000);
+  showToastError(msg);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.style.background = '#0a2e1a';
+  t.style.borderColor = 'var(--green)';
+  t.style.color = 'var(--green)';
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function showToastError(msg) {
+  const t = document.getElementById('toast');
+  t.style.background = '#2e0a0a';
+  t.style.borderColor = 'var(--red)';
+  t.style.color = 'var(--red)';
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ---- RESET ----
+function resetForm() {
+  document.getElementById('plate').value = '';
+  document.getElementById('driver').value = '';
+  document.getElementById('company').value = '';
+  document.getElementById('ktp').value = '';
+  document.getElementById('driver-card').value = '';
+  document.getElementById('products').value = '';
+  document.getElementById('details').value = '';
+  document.getElementById('annot-approver').value = '';
+  document.querySelectorAll('input[name="simtype"]').forEach(r => r.checked = false);
+  document.querySelectorAll('input[name="vtype"]').forEach(r => r.checked = false);
+  document.querySelectorAll('input[name="dest"]').forEach(r => r.checked = false);
+  document.querySelectorAll('input[name="shipment"]').forEach(r => r.checked = false);
+  document.querySelectorAll('.annot-input').forEach(r => r.checked = false);
+  toggleAnnotPanel();
+}
+
+// ---- ANNOTATION PANEL TOGGLE ----
+function toggleAnnotPanel() {
+  const anyChecked = document.querySelectorAll('.annot-input:checked').length > 0;
+  document.getElementById('annot-warning').classList.toggle('show', anyChecked);
+  document.getElementById('annot-approval').classList.toggle('show', anyChecked);
+  if (!anyChecked) document.getElementById('annot-approver').value = '';
+}
+
+document.querySelectorAll('.annot-input').forEach(el => {
+  el.addEventListener('change', toggleAnnotPanel);
+});
+
+// ---- OCR CAMERA ----
+let cameraStream = null;
+
+async function openOCR() {
+  document.getElementById('ocr-modal').classList.add('open');
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    document.getElementById('camera-view').srcObject = cameraStream;
+  } catch (err) {
+    showToastError('Camera access denied. Type plate manually.');
+    closeOCR();
+  }
+}
+
+function closeOCR() {
+  document.getElementById('ocr-modal').classList.remove('open');
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+}
+
+function captureOCR() {
+  const video = document.getElementById('camera-view');
+  const canvas = document.getElementById('snapshot');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const result = prompt('OCR captured. Please type/confirm the plate number:');
+  if (result) {
+    const plate = result.toUpperCase();
+    document.getElementById('plate').value = plate;
+    showAutofillDropdown(plate);
+  }
+  closeOCR();
+}
+
+// ---- GOOGLE SHEETS INTEGRATION ----
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbz_iePiuWHa3O5-cAZm-9zya9rCMlqGaz4mXaT2wLm4GJZfPRWb5vgDxx04L9DRmJDg/exec';
+
+async function sendToGoogleSheets(entry) {
+  if (!SHEET_URL || SHEET_URL.includes('YOUR_GOOGLE')) {
+    document.getElementById('sync-status').textContent = 'Saved locally (no server)';
+    return;
+  }
+  document.getElementById('sync-status').textContent = 'Syncing...';
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'addEntry', data: entry })
+    });
+    document.getElementById('sync-status').textContent = 'Synced ✓';
+    setTimeout(() => document.getElementById('sync-status').textContent = 'Ready', 3000);
+  } catch (e) {
+    document.getElementById('sync-status').textContent = 'Offline — saved locally';
+  }
+}
+
+async function pingServer() {
+  if (!SHEET_URL || SHEET_URL.includes('YOUR_GOOGLE')) return;
+  try {
+    const res = await fetch(SHEET_URL + '?action=ping');
+    const json = await res.json();
+    if (json.status === 'ok') {
+      document.getElementById('sync-status').textContent = 'Connected ✓';
+      setTimeout(() => document.getElementById('sync-status').textContent = 'Ready', 2000);
+    }
+  } catch (e) {
+    document.getElementById('sync-status').textContent = 'Server unreachable';
+  }
+}
+
+pingServer();
+</script>
+</body>
+</html>
