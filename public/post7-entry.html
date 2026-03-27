@@ -627,6 +627,71 @@
   .btn-submit:hover { background: #ffd84d; }
   .btn-submit:active { transform: scale(0.98); }
 
+  /* Confirmation modal */
+  .confirm-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .confirm-overlay.open { display: flex; }
+  .confirm-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%;
+    max-width: 400px;
+  }
+  .confirm-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 16px; letter-spacing: 2px;
+    color: var(--text); text-transform: uppercase; margin-bottom: 16px;
+  }
+  .confirm-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .confirm-row:last-of-type { border-bottom: none; }
+  .confirm-key {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--muted); flex-shrink: 0; margin-right: 12px;
+  }
+  .confirm-val { font-weight: 600; color: var(--text); text-align: right; }
+  .confirm-plate-val {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 18px; color: var(--accent); letter-spacing: 3px;
+  }
+  .confirm-annot {
+    margin-top: 10px; padding: 8px 12px;
+    background: #2e0a0a; border: 1px solid var(--red);
+    border-radius: var(--radius); font-size: 12px; color: var(--red);
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  }
+  body.light .confirm-annot { background: #fde8e8; }
+  .confirm-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-confirm-cancel {
+    flex: 1; background: transparent; border: 1px solid var(--border);
+    color: var(--muted); font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 14px; letter-spacing: 1px;
+    text-transform: uppercase; padding: 12px; border-radius: var(--radius);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-confirm-cancel:hover { border-color: var(--red); color: var(--red); }
+  .btn-confirm-ok {
+    flex: 2; background: var(--accent); border: none; color: #000;
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+    font-size: 16px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 12px; border-radius: var(--radius); cursor: pointer; transition: background 0.15s;
+  }
+  .btn-confirm-ok:hover { background: #ffd84d; }
+  .btn-confirm-ok:disabled { background: var(--surface2); color: var(--muted); cursor: not-allowed; }
+
   /* Success toast */
   .toast {
     position: fixed;
@@ -1154,6 +1219,44 @@
   </span>
 </footer>
 
+<!-- Confirmation Modal -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-modal">
+    <div class="confirm-title">Konfirmasi Data Entry</div>
+    <div class="confirm-row">
+      <span class="confirm-key">Plat</span>
+      <span class="confirm-val confirm-plate-val" id="cf-plate">—</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-key">Driver</span>
+      <span class="confirm-val" id="cf-driver">—</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-key">Perusahaan</span>
+      <span class="confirm-val" id="cf-company">—</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-key">Jenis</span>
+      <span class="confirm-val" id="cf-vtype">—</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-key">Tujuan</span>
+      <span class="confirm-val" id="cf-dest">—</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-key">Shipment</span>
+      <span class="confirm-val" id="cf-shipment">—</span>
+    </div>
+    <div class="confirm-annot" id="cf-annot" style="display:none"></div>
+    <div class="confirm-actions">
+      <button class="btn-confirm-cancel" onclick="closeConfirm()">Batal</button>
+      <button class="btn-confirm-ok" id="btn-confirm-ok" onclick="confirmAndSubmit()">
+        Konfirmasi &amp; LOG ENTRY
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- OCR Modal -->
 <div class="modal-overlay" id="ocr-modal">
   <div class="modal">
@@ -1177,34 +1280,46 @@
 <script>
 // ============================================================
 // AUTOFILL SYSTEM
+// Registry is built once on load and updated when a new entry is saved.
+// This prevents re-scanning localStorage on every keystroke.
 // ============================================================
 
-// Build a registry of known vehicles from ALL past logs (across days)
-function getVehicleRegistry() {
+let vehicleRegistry = {}; // module-level cache
+
+function buildVehicleRegistry() {
   const registry = {};
-  // Scan all localStorage keys for gate_log entries
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (!key.startsWith('gate_log_')) continue;
+    if (!key || !key.startsWith('gate_log_')) continue;
     try {
       const logs = JSON.parse(localStorage.getItem(key) || '[]');
       logs.forEach(entry => {
         if (!entry.plate) return;
         const plate = entry.plate.toUpperCase().trim();
-        if (!registry[plate]) {
-          registry[plate] = { plate, entries: [] };
-        }
+        if (!registry[plate]) registry[plate] = { plate, entries: [] };
         registry[plate].entries.push(entry);
       });
     } catch {}
   }
-  // For each plate, pick the most recent entry as the template
   Object.values(registry).forEach(v => {
     v.entries.sort((a, b) => (b.id || 0) - (a.id || 0));
     v.latest = v.entries[0];
     v.count  = v.entries.length;
   });
-  return registry;
+  vehicleRegistry = registry;
+}
+
+// Build once on page load
+buildVehicleRegistry();
+
+// Call this after a new entry is saved so registry stays current
+function updateRegistryWithEntry(entry) {
+  if (!entry.plate) return;
+  const plate = entry.plate.toUpperCase().trim();
+  if (!vehicleRegistry[plate]) vehicleRegistry[plate] = { plate, entries: [] };
+  vehicleRegistry[plate].entries.unshift(entry);
+  vehicleRegistry[plate].latest = entry;
+  vehicleRegistry[plate].count  = vehicleRegistry[plate].entries.length;
 }
 
 let afHighlight = -1;
@@ -1254,8 +1369,7 @@ function renderAutofillHighlight() {
 }
 
 function showAutofillDropdown(query) {
-  const registry = getVehicleRegistry();
-  const allPlates = Object.values(registry).sort((a, b) => (b.latest.id || 0) - (a.latest.id || 0));
+  const allPlates = Object.values(vehicleRegistry).sort((a, b) => (b.latest.id || 0) - (a.latest.id || 0));
 
   // Filter by query
   const filtered = query.length === 0
@@ -1296,8 +1410,7 @@ function closeAutofillDropdown() {
 }
 
 function applyAutofill(plate) {
-  const registry = getVehicleRegistry();
-  const v = registry[plate.toUpperCase()];
+  const v = vehicleRegistry[plate.toUpperCase()];
   if (!v || !v.latest) return;
   const e = v.latest;
 
@@ -1456,80 +1569,131 @@ function getFullTimestamp() {
   return new Date().toISOString();
 }
 
+// Holds the validated entry object while waiting for confirmation
+let pendingEntry = null;
+
 function submitEntry() {
-  const plate = document.getElementById('plate').value.trim();
-  const driver = document.getElementById('driver').value.trim();
-  const company = document.getElementById('company').value.trim();
-  const ktp = document.getElementById('ktp').value.trim();
-  const driverCard = document.getElementById('driver-card').value.trim();
-  const vtypeEl = document.querySelector('input[name="vtype"]:checked');
-  const destEl = document.querySelector('input[name="dest"]:checked');
-  const simEl = document.querySelector('input[name="simtype"]:checked');
-  const products = document.getElementById('products').value.trim();
-  const details = document.getElementById('details').value.trim();
+  const plate        = document.getElementById('plate').value.trim().toUpperCase();
+  const driver       = document.getElementById('driver').value.trim();
+  const company      = document.getElementById('company').value.trim();
+  const ktp          = document.getElementById('ktp').value.trim();
+  const driverCard   = document.getElementById('driver-card').value.trim();
+  const vtypeEl      = document.querySelector('input[name="vtype"]:checked');
+  const destEl       = document.querySelector('input[name="dest"]:checked');
+  const simEl        = document.querySelector('input[name="simtype"]:checked');
+  const products     = document.getElementById('products').value.trim();
+  const details      = document.getElementById('details').value.trim();
   const annotApprover = document.getElementById('annot-approver').value.trim();
+  const shipment     = Array.from(document.querySelectorAll('input[name="shipment"]:checked')).map(el => el.value);
+  const annotations  = Array.from(document.querySelectorAll('.annot-input:checked')).map(el => el.value);
 
-  // Collect multi-select shipment
-  const shipment = Array.from(document.querySelectorAll('input[name="shipment"]:checked')).map(el => el.value);
-
-  // Collect multi-select annotations
-  const annotations = Array.from(document.querySelectorAll('.annot-input:checked')).map(el => el.value);
-
-  if (!plate) { highlight('plate', 'Please enter license plate'); return; }
-  if (!driver) { highlight('driver', 'Please enter driver name'); return; }
-  if (!company) { highlight('company', 'Please enter company'); return; }
-  if (!simEl) { showToastError('Please select driving license type (SIM)'); return; }
-  if (!ktp) { highlight('ktp', 'Please enter KTP / NIK number'); return; }
-  if (!driverCard) { highlight('driver-card', 'Please enter driver card number'); return; }
-  if (!vtypeEl) { showToastError('Please select vehicle type'); return; }
-  if (!destEl) { showToastError('Please select destination'); return; }
+  // --- Validation ---
+  if (!plate)    { highlight('plate',       'Masukkan nomor plat');               return; }
+  if (!driver)   { highlight('driver',      'Masukkan nama pengemudi');           return; }
+  if (!company)  { highlight('company',     'Masukkan nama perusahaan');          return; }
+  if (!simEl)    { showToastError('Pilih jenis SIM');                             return; }
+  if (!ktp)      { highlight('ktp',         'Masukkan nomor ID');                 return; }
+  if (!driverCard) { highlight('driver-card', 'Masukkan nomor kartu pengemudi'); return; }
+  if (!vtypeEl)  { showToastError('Pilih jenis kendaraan');                       return; }
+  if (!destEl)   { showToastError('Pilih tujuan di dalam plant');                 return; }
   if (annotations.length > 0 && !annotApprover) {
-    highlight('annot-approver', 'Wajib isi nama approver jika ada annotation dokumen bermasalah');
+    highlight('annot-approver', 'Wajib isi nama approver jika ada annotation');
     return;
   }
 
-  const entry = {
-    id: Date.now(),
-    date: new Date().toLocaleDateString('id-ID'),
-    timeIn: getTimestamp(),
-    fullTimeIn: getFullTimestamp(),
-    plate: plate,
-    driver: driver,
-    company: company,
-    simtype: simEl.value,
-    ktp: ktp,
-    driverCard: driverCard,
-    vtype: vtypeEl.value,
-    dest: destEl.value,
-    shipment: shipment,
-    products: products,
-    details: details,
-    annotations: annotations,
-    annotApprover: annotApprover,
-    timeOut: '',
-    duration: '',
-    post: 'Post 7'
+  // --- Duplicate check: block if this plate is still active (no checkout) ---
+  const activePlate = getLogs().find(e => e.plate === plate && !e.timeOut);
+  if (activePlate) {
+    showToastError(`${plate} masih INSIDE sejak ${activePlate.timeIn}. Lakukan LOG EXIT terlebih dahulu.`);
+    highlight('plate', '');
+    return;
+  }
+
+  // --- Build entry object ---
+  pendingEntry = {
+    id:             Date.now(),
+    date:           new Date().toLocaleDateString('id-ID'),
+    timeIn:         getTimestamp(),
+    fullTimeIn:     getFullTimestamp(),
+    plate,
+    driver,
+    company,
+    simtype:        simEl.value,
+    ktp,
+    driverCard,
+    vtype:          vtypeEl.value,
+    dest:           destEl.value,
+    shipment,
+    products,
+    details,
+    annotations,
+    annotApprover,
+    timeOut:        '',
+    duration:       '',
+    post:           'Post 7'
   };
 
-  // Save locally
+  // --- Show confirmation modal ---
+  document.getElementById('cf-plate').textContent   = pendingEntry.plate;
+  document.getElementById('cf-driver').textContent  = pendingEntry.driver;
+  document.getElementById('cf-company').textContent = pendingEntry.company;
+  document.getElementById('cf-vtype').textContent   = pendingEntry.vtype;
+  document.getElementById('cf-dest').textContent    = pendingEntry.dest;
+  document.getElementById('cf-shipment').textContent = shipment.length ? shipment.join(' + ') : '—';
+
+  const annotEl = document.getElementById('cf-annot');
+  if (annotations.length > 0) {
+    annotEl.textContent = '⚠ ' + annotations.join(', ') + ' — Approval: ' + annotApprover;
+    annotEl.style.display = 'block';
+  } else {
+    annotEl.style.display = 'none';
+  }
+
+  document.getElementById('btn-confirm-ok').disabled = false;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  pendingEntry = null;
+}
+
+async function confirmAndSubmit() {
+  if (!pendingEntry) return;
+
+  // Disable button to prevent double-submit
+  document.getElementById('btn-confirm-ok').disabled = true;
+  document.getElementById('confirm-overlay').classList.remove('open');
+
+  // Save locally first
   const logs = getLogs();
-  logs.push(entry);
+  logs.push(pendingEntry);
   saveLogs(logs);
-
-  // Sync to Google Sheets
-  sendToGoogleSheets(entry);
-
+  updateRegistryWithEntry(pendingEntry); // keep autofill current
   renderLog();
-  resetForm();
-  showToast(`Entry logged: ${plate}`);
+
+  // Sync to Google Sheets — only reset form on success
+  const ok = await sendToGoogleSheets(pendingEntry);
+
+  if (ok) {
+    showToast(`Entry logged: ${pendingEntry.plate}`);
+    resetForm();
+  } else {
+    // Sheets failed but local save is fine — warn the guard
+    showToastError(`Tersimpan lokal, gagal sync ke Sheets. Coba lagi atau hubungi admin.`);
+    // Don't clear form so guard can retry
+  }
+
+  pendingEntry = null;
 }
 
 function highlight(id, msg) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.style.borderColor = 'var(--red)';
   el.focus();
   setTimeout(() => { el.style.borderColor = ''; }, 2000);
-  showToastError(msg);
+  if (msg) showToastError(msg);
 }
 
 function showToast(msg) {
@@ -1539,7 +1703,7 @@ function showToast(msg) {
   t.style.color = 'var(--green)';
   document.getElementById('toast-msg').textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  setTimeout(() => t.classList.remove('show'), 3500);
 }
 
 function showToastError(msg) {
@@ -1549,7 +1713,7 @@ function showToastError(msg) {
   t.style.color = 'var(--red)';
   document.getElementById('toast-msg').textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  setTimeout(() => t.classList.remove('show'), 4000);
 }
 
 // ---- RESET ----
@@ -1621,30 +1785,39 @@ function captureOCR() {
 // ---- GOOGLE SHEETS INTEGRATION ----
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbz_iePiuWHa3O5-cAZm-9zya9rCMlqGaz4mXaT2wLm4GJZfPRWb5vgDxx04L9DRmJDg/exec';
 
+// Returns true on success, false on failure.
+// Apps Script must have CORS headers — see Code.gs corsResponse().
 async function sendToGoogleSheets(entry) {
   if (!SHEET_URL || SHEET_URL.includes('YOUR_GOOGLE')) {
     document.getElementById('sync-status').textContent = 'Saved locally (no server)';
-    return;
+    return true; // treat as success so form still clears
   }
   document.getElementById('sync-status').textContent = 'Syncing...';
   try {
-    await fetch(SHEET_URL, {
-      method: 'POST',
-      mode: 'no-cors',
+    const res  = await fetch(SHEET_URL, {
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'addEntry', data: entry })
+      body:    JSON.stringify({ action: 'addEntry', data: entry })
     });
-    document.getElementById('sync-status').textContent = 'Synced ✓';
-    setTimeout(() => document.getElementById('sync-status').textContent = 'Ready', 3000);
+    const json = await res.json();
+    if (json.status === 'ok') {
+      document.getElementById('sync-status').textContent = 'Synced ✓';
+      setTimeout(() => document.getElementById('sync-status').textContent = 'Ready', 3000);
+      return true;
+    } else {
+      document.getElementById('sync-status').textContent = 'Sync error: ' + (json.message || 'unknown');
+      return false;
+    }
   } catch (e) {
     document.getElementById('sync-status').textContent = 'Offline — saved locally';
+    return false;
   }
 }
 
 async function pingServer() {
   if (!SHEET_URL || SHEET_URL.includes('YOUR_GOOGLE')) return;
   try {
-    const res = await fetch(SHEET_URL + '?action=ping');
+    const res  = await fetch(SHEET_URL + '?action=ping');
     const json = await res.json();
     if (json.status === 'ok') {
       document.getElementById('sync-status').textContent = 'Connected ✓';
