@@ -1257,6 +1257,58 @@ function saveLogs(logs) {
   localStorage.setItem(getTodayKey(), JSON.stringify(logs));
 }
 
+// Returns ALL active entries (no timeOut) across ALL days.
+// Vehicles may stay in the plant for multiple days, so we must
+// scan every gate_log_* key, not just today's.
+function getAllActiveLogs() {
+  const active = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('gate_log_')) continue;
+    try {
+      const logs = JSON.parse(localStorage.getItem(key) || '[]');
+      logs.forEach(e => { if (e.plate && !e.timeOut) active.push({ entry: e, storageKey: key }); });
+    } catch {}
+  }
+  return active; // array of { entry, storageKey }
+}
+
+// Find one active entry by plate across ALL days.
+// Returns { entry, storageKey } or null.
+function findActiveEntry(plate) {
+  plate = plate.toUpperCase().trim();
+  // Check most recent days first by sorting keys descending
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('gate_log_')) keys.push(k);
+  }
+  keys.sort().reverse(); // most recent first
+
+  for (const key of keys) {
+    try {
+      const logs = JSON.parse(localStorage.getItem(key) || '[]');
+      const entry = logs.find(e => e.plate === plate && !e.timeOut);
+      if (entry) return { entry, storageKey: key };
+    } catch {}
+  }
+  return null;
+}
+
+// Update a specific entry in its own storage key and write it back.
+function updateEntryInStorage(storageKey, entryId, updates) {
+  try {
+    const logs = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    const idx = logs.findIndex(e => e.id === entryId);
+    if (idx !== -1) {
+      Object.assign(logs[idx], updates);
+      localStorage.setItem(storageKey, JSON.stringify(logs));
+      return logs[idx];
+    }
+  } catch {}
+  return null;
+}
+
 function getExitKey() {
   const d = new Date();
   return `gate_exit_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
@@ -1309,15 +1361,24 @@ async function searchVehicle() {
     }
   }
 
-  // Fallback: search localStorage (same browser/device)
+  // Fallback: search localStorage across ALL days (vehicles may stay multiple days)
   document.getElementById('sync-status').textContent = 'Searching locally...';
-  const logs = getLogs();
-  const record = logs.find(e => e.plate === query && !e.timeOut);
+  const found = findActiveEntry(query);
 
-  if (!record) {
-    const alreadyOut = logs.find(e => e.plate === query && e.timeOut);
-    if (alreadyOut) {
-      showNotFound(`Plate ${query} already logged out at ${alreadyOut.timeOut}.`);
+  if (!found) {
+    // Check if already out (scan all days)
+    let alreadyOutTime = null;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('gate_log_')) continue;
+      try {
+        const logs = JSON.parse(localStorage.getItem(k) || '[]');
+        const out = logs.find(e => e.plate === query && e.timeOut);
+        if (out) { alreadyOutTime = out.timeOut; break; }
+      } catch {}
+    }
+    if (alreadyOutTime) {
+      showNotFound(`Plate ${query} already logged out at ${alreadyOutTime}.`);
     } else {
       showNotFound(`No active entry record found for plate ${query}.`);
     }
@@ -1325,7 +1386,7 @@ async function searchVehicle() {
     return;
   }
 
-  populateCard(record);
+  populateCard(found.entry);
   document.getElementById('sync-status').textContent = 'Found locally';
 }
 
@@ -1405,28 +1466,23 @@ function calcDuration(fullTimeInStr, fullTimeOutStr) {
 function logExit() {
   if (!currentRecord) return;
 
-  const timeOut = getTimestamp();
+  const timeOut    = getTimestamp();
   const fullTimeOut = getFullTimestamp();
-  // Calculate duration using exact OUT timestamp vs IN timestamp
-  const duration = calcDuration(currentRecord.fullTimeIn, fullTimeOut);
+  const duration   = calcDuration(currentRecord.fullTimeIn, fullTimeOut);
 
-  // Update the entry log
-  const logs = getLogs();
-  const idx = logs.findIndex(e => e.id === currentRecord.id);
-  if (idx !== -1) {
-    logs[idx].timeOut = timeOut;
-    logs[idx].fullTimeOut = fullTimeOut;
-    logs[idx].duration = duration;
-    saveLogs(logs);
+  // Update entry in whichever day-key it lives in (may not be today)
+  const found = findActiveEntry(currentRecord.plate);
+  if (found) {
+    updateEntryInStorage(found.storageKey, found.entry.id, { timeOut, fullTimeOut, duration });
   }
 
-  // Save to exit log
-  const exitLogs = getExitLogs();
+  // Save to today's exit log
   const exitEntry = { ...currentRecord, timeOut, fullTimeOut, duration };
+  const exitLogs  = getExitLogs();
   exitLogs.push(exitEntry);
   saveExitLogs(exitLogs);
 
-  sendExitToGoogleSheets(logs[idx] || exitEntry);
+  sendExitToGoogleSheets(exitEntry);
 
   clearInterval(durationInterval);
   renderExitLog();
@@ -1676,7 +1732,7 @@ function removeBulkRow(id) {
   updateBulkSummary();
 }
 
-// ---- CHECK PLATE AGAINST localStorage ----
+// ---- CHECK PLATE AGAINST ALL DAYS (not just today) ----
 function checkBulkPlate(id) {
   const val = document.getElementById(`bulk-plate-${id}`)?.value.trim().toUpperCase();
   const statusEl = document.getElementById(`bulk-status-${id}`);
@@ -1689,20 +1745,24 @@ function checkBulkPlate(id) {
     return;
   }
 
-  const logs = getLogs();
-  const record = logs.find(e => e.plate === val && !e.timeOut);
-  if (record) {
+  // Search across all days
+  const found = findActiveEntry(val);
+  if (found) {
     statusEl.textContent = '✓ FOUND';
     statusEl.className = 'bulk-plate-status found';
   } else {
-    const alreadyOut = logs.find(e => e.plate === val && e.timeOut);
-    if (alreadyOut) {
-      statusEl.textContent = 'SUDAH OUT';
-      statusEl.className = 'bulk-plate-status logged';
-    } else {
-      statusEl.textContent = '✗ TIDAK ADA';
-      statusEl.className = 'bulk-plate-status not-found';
+    // Check if already out
+    let alreadyOut = false;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('gate_log_')) continue;
+      try {
+        const logs = JSON.parse(localStorage.getItem(k) || '[]');
+        if (logs.find(e => e.plate === val && e.timeOut)) { alreadyOut = true; break; }
+      } catch {}
     }
+    statusEl.textContent = alreadyOut ? 'SUDAH OUT' : '✗ TIDAK ADA';
+    statusEl.className = 'bulk-plate-status ' + (alreadyOut ? 'logged' : 'not-found');
   }
   updateBulkSummary();
 }
@@ -1720,41 +1780,62 @@ function updateBulkSummary() {
 async function submitBulk() {
   const rows = document.querySelectorAll('.bulk-plate-row');
   let successCount = 0;
-  let skipCount = 0;
-  let missingTime = 0;
+  let skipCount    = 0;
+  let missingTime  = 0;
 
-  const logs = getLogs();
   const exitLogs = getExitLogs();
 
-  rows.forEach(row => {
-    const id = row.id.replace('bulk-row-', '');
-    const plateEl = document.getElementById(`bulk-plate-${id}`);
-    const timeEl  = document.getElementById(`bulk-time-${id}`);
+  for (const row of rows) {
+    const id       = row.id.replace('bulk-row-', '');
+    const plateEl  = document.getElementById(`bulk-plate-${id}`);
+    const timeEl   = document.getElementById(`bulk-time-${id}`);
     const statusEl = document.getElementById(`bulk-status-${id}`);
-    if (!plateEl || plateEl.disabled) return;
+    if (!plateEl || plateEl.disabled) continue;
 
     const plate = plateEl.value.trim().toUpperCase();
-    if (!plate) return;
+    if (!plate) continue;
 
+    // Validate time field
     const timeVal = timeEl ? timeEl.value : '';
-    if (!timeVal) { missingTime++; if (statusEl) { statusEl.textContent = '! JAM?'; statusEl.className = 'bulk-plate-status not-found'; } return; }
+    if (!timeVal) {
+      missingTime++;
+      if (statusEl) { statusEl.textContent = '! JAM?'; statusEl.className = 'bulk-plate-status not-found'; }
+      continue;
+    }
 
+    // Build exit timestamp — handle overnight (outDate before entry → add 1 day)
     const [hh, mm] = timeVal.split(':');
     const now = new Date();
-    const outDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
-      parseInt(hh), parseInt(mm), 0, 0);
-    const timeOut   = `${hh}:${mm}:00`;
+    let outDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hh), parseInt(mm), 0, 0);
+    const timeOut    = `${hh}:${mm}:00`;
     const fullTimeOut = outDate.toISOString();
 
-    const idx = logs.findIndex(e => e.plate === plate && !e.timeOut);
-    if (idx === -1) { skipCount++; return; }
+    // Find active entry across ALL days
+    const found = findActiveEntry(plate);
+    if (!found) {
+      skipCount++;
+      if (statusEl) { statusEl.textContent = '✗ TIDAK ADA'; statusEl.className = 'bulk-plate-status not-found'; }
+      continue;
+    }
 
-    const duration = calcDuration(logs[idx].fullTimeIn, fullTimeOut);
-    logs[idx].timeOut    = timeOut;
-    logs[idx].fullTimeOut = fullTimeOut;
-    logs[idx].duration   = duration;
+    const { entry, storageKey } = found;
 
-    const exitEntry = { ...logs[idx] };
+    // Fix duration if exit time is before entry time (overnight shift)
+    let computedFullTimeOut = fullTimeOut;
+    const inTime = parseFullTimestamp(entry.fullTimeIn);
+    if (inTime && outDate < inTime) {
+      outDate = new Date(outDate.getTime() + 24 * 3600000);
+      computedFullTimeOut = outDate.toISOString();
+    }
+
+    const duration = calcDuration(entry.fullTimeIn, computedFullTimeOut);
+
+    // Update entry in its original storage key
+    const updated = updateEntryInStorage(storageKey, entry.id, {
+      timeOut, fullTimeOut: computedFullTimeOut, duration
+    });
+
+    const exitEntry = { ...entry, timeOut, fullTimeOut: computedFullTimeOut, duration };
     exitLogs.push(exitEntry);
     sendExitToGoogleSheets(exitEntry);
 
@@ -1763,20 +1844,19 @@ async function submitBulk() {
     if (timeEl)   { timeEl.disabled  = true; }
 
     successCount++;
-  });
+  }
 
-  saveLogs(logs);
   saveExitLogs(exitLogs);
   renderExitLog();
 
-  if (missingTime > 0) showToastError(`${missingTime} baris tidak ada jam keluar — dilewati`);
+  if (missingTime  > 0) showToastError(`${missingTime} baris tidak ada jam keluar — dilewati`);
   if (successCount > 0) showToast(`✓ ${successCount} kendaraan berhasil di-log OUT`);
-  if (skipCount > 0) setTimeout(() => showToastError(`${skipCount} plat dilewati (tidak ditemukan/sudah out)`), 1500);
+  if (skipCount    > 0) setTimeout(() => showToastError(`${skipCount} plat tidak ditemukan — dilewati`), 1500);
 
   // After 2s clear logged rows
   setTimeout(() => {
     document.querySelectorAll('.bulk-plate-status.logged').forEach(el => {
-      const rowId = el.id.replace('bulk-status-','');
+      const rowId = el.id.replace('bulk-status-', '');
       const pEl = document.getElementById(`bulk-plate-${rowId}`);
       const tEl = document.getElementById(`bulk-time-${rowId}`);
       if (pEl) { pEl.value = ''; pEl.disabled = false; }
@@ -1784,7 +1864,6 @@ async function submitBulk() {
       el.textContent = '—';
       el.className = 'bulk-plate-status';
     });
-    // Re-number
     document.querySelectorAll('.bulk-row-num').forEach((el, i) => { el.textContent = i + 1; });
     updateBulkSummary();
   }, 2000);
