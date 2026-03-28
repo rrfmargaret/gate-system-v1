@@ -1609,30 +1609,20 @@ async function searchFromServer(plate) {
 }
 
 async function sendExitToGoogleSheets(entry) {
-  if (!SHEET_URL) {
-    document.getElementById('sync-status').textContent = 'Saved locally (no server)';
-    return true;
-  }
   document.getElementById('sync-status').textContent = 'Syncing...';
   try {
-    const res  = await fetch(SHEET_URL, {
+    await fetch(SHEET_URL, {
       method:  'POST',
+      mode:    'no-cors',                        // required for Apps Script
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ action: 'updateExit', data: entry })
     });
-    const json = await res.json();
-    if (json.status === 'ok') {
-      document.getElementById('sync-status').textContent = 'Synced ✓';
-      setTimeout(() => document.getElementById('sync-status').textContent = 'Ready', 3000);
-      return true;
-    } else {
-      document.getElementById('sync-status').textContent = 'Sync error: ' + (json.message || 'unknown');
-      return false;
-    }
+    document.getElementById('sync-status').textContent = 'Sent ✓';
+    setTimeout(() => document.getElementById('sync-status').textContent = 'Ready', 3000);
   } catch {
     document.getElementById('sync-status').textContent = 'Offline — saved locally';
-    return false;
   }
+  return true;
 }
 
 async function pingServer() {
@@ -1648,7 +1638,6 @@ async function pingServer() {
     document.getElementById('sync-status').textContent = 'Server unreachable';
   }
 }
-
 pingServer();
 
 // ============================================================

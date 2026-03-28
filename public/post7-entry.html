@@ -1794,37 +1794,34 @@ function captureOCR() {
 // ---- GOOGLE SHEETS INTEGRATION ----
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbz_iePiuWHa3O5-cAZm-9zya9rCMlqGaz4mXaT2wLm4GJZfPRWb5vgDxx04L9DRmJDg/exec';
 
-// Returns true on success, false on failure.
+// Apps Script Web Apps require mode:'no-cors' for POST from browser —
+// Google redirects the request which CORS policy blocks otherwise.
+// With no-cors the response is opaque (unreadable) but the data IS sent.
+// We always treat POST as success and rely on local save as backup.
 async function sendToGoogleSheets(entry) {
-  if (!SHEET_URL) {
-    document.getElementById('sync-status').textContent = 'Saved locally (no server)';
-    return true;
-  }
   document.getElementById('sync-status').textContent = 'Syncing...';
   try {
-    const res  = await fetch(SHEET_URL, {
+    await fetch(SHEET_URL, {
       method:  'POST',
+      mode:    'no-cors',                        // required for Apps Script
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ action: 'addEntry', data: entry })
     });
-    const json = await res.json();
-    if (json.status === 'ok') {
-      document.getElementById('sync-status').textContent = 'Synced ✓';
-      setTimeout(() => document.getElementById('sync-status').textContent = 'Ready', 3000);
-      return true;
-    } else {
-      document.getElementById('sync-status').textContent = 'Sync error: ' + (json.message || 'unknown');
-      return false;
-    }
+    // Response is opaque with no-cors — cannot read it, but request was sent
+    document.getElementById('sync-status').textContent = 'Sent ✓';
+    setTimeout(() => document.getElementById('sync-status').textContent = 'Ready', 3000);
   } catch (e) {
+    // Network error — data is still saved locally
     document.getElementById('sync-status').textContent = 'Offline — saved locally';
-    return false;
   }
+  // Always return true: local save already succeeded, form should clear
+  return true;
 }
 
 async function pingServer() {
   if (!SHEET_URL) return;
   try {
+    // GET requests work normally (no redirect issue) — use to test connectivity
     const res  = await fetch(SHEET_URL + '?action=ping');
     const json = await res.json();
     if (json.status === 'ok') {
