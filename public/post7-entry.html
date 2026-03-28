@@ -1500,9 +1500,18 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-// ---- PLATE INPUT FORMATTING ----
+// ---- INPUT NORMALIZATION ----
+// Plate: uppercase + strip all spaces (B1234XX format)
 document.getElementById('plate').addEventListener('input', function() {
-  this.value = this.value.toUpperCase();
+  this.value = this.value.toUpperCase().replace(/\s+/g, '');
+});
+
+// All other text fields: uppercase on blur
+['driver','company','ktp','driver-card','products','details','annot-approver'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('blur', function() {
+    if (this.value) this.value = this.value.toUpperCase();
+  });
 });
 
 // ---- LOCAL LOG STORAGE ----
@@ -1573,17 +1582,17 @@ function getFullTimestamp() {
 let pendingEntry = null;
 
 function submitEntry() {
-  const plate        = document.getElementById('plate').value.trim().toUpperCase();
-  const driver       = document.getElementById('driver').value.trim();
-  const company      = document.getElementById('company').value.trim();
-  const ktp          = document.getElementById('ktp').value.trim();
-  const driverCard   = document.getElementById('driver-card').value.trim();
+  const plate        = document.getElementById('plate').value.trim().toUpperCase().replace(/\s+/g, '');
+  const driver       = document.getElementById('driver').value.trim().toUpperCase();
+  const company      = document.getElementById('company').value.trim().toUpperCase();
+  const ktp          = document.getElementById('ktp').value.trim().toUpperCase();
+  const driverCard   = document.getElementById('driver-card').value.trim().toUpperCase();
   const vtypeEl      = document.querySelector('input[name="vtype"]:checked');
   const destEl       = document.querySelector('input[name="dest"]:checked');
   const simEl        = document.querySelector('input[name="simtype"]:checked');
-  const products     = document.getElementById('products').value.trim();
-  const details      = document.getElementById('details').value.trim();
-  const annotApprover = document.getElementById('annot-approver').value.trim();
+  const products     = document.getElementById('products').value.trim().toUpperCase();
+  const details      = document.getElementById('details').value.trim().toUpperCase();
+  const annotApprover = document.getElementById('annot-approver').value.trim().toUpperCase();
   const shipment     = Array.from(document.querySelectorAll('input[name="shipment"]:checked')).map(el => el.value);
   const annotations  = Array.from(document.querySelectorAll('.annot-input:checked')).map(el => el.value);
 
@@ -1786,11 +1795,10 @@ function captureOCR() {
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbz_iePiuWHa3O5-cAZm-9zya9rCMlqGaz4mXaT2wLm4GJZfPRWb5vgDxx04L9DRmJDg/exec';
 
 // Returns true on success, false on failure.
-// Apps Script must have CORS headers — see Code.gs corsResponse().
 async function sendToGoogleSheets(entry) {
-  if (!SHEET_URL || SHEET_URL.includes('YOUR_GOOGLE')) {
+  if (!SHEET_URL) {
     document.getElementById('sync-status').textContent = 'Saved locally (no server)';
-    return true; // treat as success so form still clears
+    return true;
   }
   document.getElementById('sync-status').textContent = 'Syncing...';
   try {
@@ -1815,7 +1823,7 @@ async function sendToGoogleSheets(entry) {
 }
 
 async function pingServer() {
-  if (!SHEET_URL || SHEET_URL.includes('YOUR_GOOGLE')) return;
+  if (!SHEET_URL) return;
   try {
     const res  = await fetch(SHEET_URL + '?action=ping');
     const json = await res.json();

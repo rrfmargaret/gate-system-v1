@@ -1044,9 +1044,9 @@
   <div class="search-section">
     <div class="search-row">
       <div class="plate-input-wrap">
-        <input type="text" class="plate-input" id="search-plate" placeholder="B 1234 XX"
+        <input type="text" class="plate-input" id="search-plate" placeholder="B1234XX"
           maxlength="12" autocomplete="off" spellcheck="false"
-          oninput="this.value=this.value.toUpperCase(); clearResult();"
+          oninput="this.value=this.value.toUpperCase().replace(/\s+/g,''); clearResult();"
           onkeydown="if(event.key==='Enter') searchVehicle()">
       </div>
       <button class="ocr-btn" onclick="openOCR()" title="Scan plate with camera">
@@ -1276,7 +1276,7 @@ function getAllActiveLogs() {
 // Find one active entry by plate across ALL days.
 // Returns { entry, storageKey } or null.
 function findActiveEntry(plate) {
-  plate = plate.toUpperCase().trim();
+  plate = plate.toUpperCase().replace(/\s+/g, '').trim();
   // Check most recent days first by sorting keys descending
   const keys = [];
   for (let i = 0; i < localStorage.length; i++) {
@@ -1288,7 +1288,7 @@ function findActiveEntry(plate) {
   for (const key of keys) {
     try {
       const logs = JSON.parse(localStorage.getItem(key) || '[]');
-      const entry = logs.find(e => e.plate === plate && !e.timeOut);
+      const entry = logs.find(e => e.plate && e.plate.toUpperCase().replace(/\s+/g,'') === plate && !e.timeOut);
       if (entry) return { entry, storageKey: key };
     } catch {}
   }
@@ -1328,7 +1328,8 @@ let durationInterval = null;
 
 // ---- SEARCH ----
 async function searchVehicle() {
-  const query = document.getElementById('search-plate').value.trim().toUpperCase();
+  // Normalize: uppercase, strip all spaces (same format as stored plate)
+  const query = document.getElementById('search-plate').value.trim().toUpperCase().replace(/\s+/g, '');
   if (!query) { showToastError('Please enter a license plate to search'); return; }
 
   document.getElementById('not-found').classList.remove('show');
@@ -1600,7 +1601,7 @@ function captureOCR() {
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbz_iePiuWHa3O5-cAZm-9zya9rCMlqGaz4mXaT2wLm4GJZfPRWb5vgDxx04L9DRmJDg/exec';
 
 async function searchFromServer(plate) {
-  if (!SHEET_URL || SHEET_URL.includes('YOUR_GOOGLE')) return null;
+  if (!SHEET_URL) return null;
   try {
     const res = await fetch(`${SHEET_URL}?action=searchPlate&plate=${encodeURIComponent(plate)}`);
     return await res.json();
@@ -1608,7 +1609,7 @@ async function searchFromServer(plate) {
 }
 
 async function sendExitToGoogleSheets(entry) {
-  if (!SHEET_URL || SHEET_URL.includes('YOUR_GOOGLE')) {
+  if (!SHEET_URL) {
     document.getElementById('sync-status').textContent = 'Saved locally (no server)';
     return true;
   }
@@ -1635,7 +1636,7 @@ async function sendExitToGoogleSheets(entry) {
 }
 
 async function pingServer() {
-  if (!SHEET_URL || SHEET_URL.includes('YOUR_GOOGLE')) return;
+  if (!SHEET_URL) return;
   try {
     const res = await fetch(SHEET_URL + '?action=ping');
     const json = await res.json();
@@ -1713,7 +1714,7 @@ function addBulkRow() {
     <span class="bulk-row-num">${rowNum}</span>
     <input type="text" class="bulk-plate-field" id="bulk-plate-${id}"
       placeholder="B 1234 XX" maxlength="12" autocomplete="off" spellcheck="false"
-      oninput="this.value=this.value.toUpperCase(); checkBulkPlate(${id})"
+      oninput="this.value=this.value.toUpperCase().replace(/\s+/g,''); checkBulkPlate(${id})"
       onkeydown="if(event.key==='Enter'){addBulkRow();setTimeout(()=>document.getElementById('bulk-plate-${id+1}')?.focus(),50)}">
     <input type="time" class="bulk-row-time" id="bulk-time-${id}" value="${nowVal}" step="60" title="Jam keluar kendaraan ini">
     <span class="bulk-plate-status" id="bulk-status-${id}">—</span>

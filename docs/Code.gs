@@ -3,7 +3,7 @@
 // Deploy as: Web App → Execute as: Me → Who has access: Anyone
 // ============================================================
 
-var SHEET_ID    = 'YOUR_GOOGLE_SHEET_ID_HERE';
+var SHEET_ID    = 'Qmkha39Z-K7tzsWFdGtSZ0DOY1EtefJc3Hu56esSZ4U';
 var SHEET_ENTRY = 'Entry Log';
 
 // Column headers — order must match the row array in addEntry()
@@ -90,6 +90,9 @@ function dispatch(action, data) {
 function addEntry(entry) {
   if (!entry || !entry.plate) return { status: 'error', message: 'Missing entry data' };
 
+  // Normalize plate: uppercase, strip all spaces
+  entry.plate = String(entry.plate).toUpperCase().replace(/\s+/g, '');
+
   var ss    = SpreadsheetApp.openById(SHEET_ID);
   var sheet = getOrCreateSheet(ss, SHEET_ENTRY);
 
@@ -173,7 +176,8 @@ function updateExit(entry) {
 function searchPlate(plate) {
   if (!plate) return { status: 'error', message: 'No plate provided' };
 
-  plate = plate.toUpperCase().trim();
+  // Normalize: uppercase, strip spaces
+  plate = String(plate).toUpperCase().replace(/\s+/g, '').trim();
 
   var cache    = CacheService.getScriptCache();
   var cacheKey = 'plate_' + plate;
@@ -192,7 +196,7 @@ function searchPlate(plate) {
   var alreadyOut = null;
 
   for (var i = data.length - 1; i >= 1; i--) {
-    if (String(data[i][COL_PLATE - 1]).toUpperCase().trim() !== plate) continue;
+    if (String(data[i][COL_PLATE - 1]).toUpperCase().replace(/\s+/g, '').trim() !== plate) continue;
 
     var status = String(data[i][COL_STATUS - 1]).toUpperCase().trim();
 
